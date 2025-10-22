@@ -198,6 +198,7 @@ download_mnist() {
 }
 
 retry_pip_install() {
+  local pip_command=$1
   local status="0"
   local errmsg=""
 
@@ -205,7 +206,7 @@ retry_pip_install() {
   # that break the entire CI job: Simply retry installation in this case
   # after n seconds.
   for _ in {1..3}; do
-    errmsg="$("$@" 2>&1)" && break
+    errmsg=$(eval "${pip_command}" 2>&1) && break
     status=$errmsg && echo "'pip install ...' failed, will retry after n seconds!" && sleep 30
   done
   if [[ "$status" != "0" ]]; then
@@ -316,8 +317,7 @@ install_pip_packages() {
     fi
   fi
 
-  # TODO(ray-ci): pin the dependencies.
-  CC=gcc retry_pip_install pip install -Ur "${WORKSPACE_DIR}/python/requirements.txt"
+  retry_pip_install "CC=gcc pip install -Ur ${WORKSPACE_DIR}/python/requirements.txt"
 
   # Install deeplearning libraries (Torch + TensorFlow)
   if [[ -n "${TORCH_VERSION-}" || "${DL-}" == "1" || "${RLLIB_TESTING-}" == 1 || "${TRAIN_TESTING-}" == 1 || "${TUNE_TESTING-}" == 1 || "${DOC_TESTING-}" == 1 ]]; then
